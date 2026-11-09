@@ -139,3 +139,10 @@ This design was chosen for the following reasons:
 4. **Efficient relationships:** A single genre can be associated with multiple books, establishing a one-to-many relationship between Genre and Book.
 
 This approach follows relational database normalisation principles and makes the library catalog easier to maintain as the collection grows.
+## Relational vs Document Database Modelling
+
+In a relational database such as PostgreSQL, data is organised into tables, and relationships between tables are established using primary keys and foreign keys. In this project, each Review references a Book through the `bookId` foreign key.
+
+In a document database such as MongoDB, related information can instead be embedded inside a document. For example, reviews could be stored as an array within a Book document rather than in a separate table.
+
+The key difference is that relational modelling typically separates related data into tables and connects them through relationships, while document modelling can store related data together in nested documents or arrays.
