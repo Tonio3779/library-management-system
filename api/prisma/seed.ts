@@ -1,3 +1,4 @@
+import * as bcrypt from 'bcrypt';
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -119,6 +120,28 @@ const books = [
   },
 ];
 async function main() {
+  const librarianPassword = process.env.LIBRARIAN_PASSWORD;
+  if (!librarianPassword) {
+    throw new Error("LIBRARIAN_PASSWORD is missing from .env");
+  }
+
+  const hashedPassword = await bcrypt.hash(librarianPassword, 12);
+
+  await prisma.user.upsert({
+    where: { email: "librarian@library.com" },
+    update: {
+      name: "Library Administrator",
+      role: "LIBRARIAN",
+      password: hashedPassword,
+    },
+    create: {
+      name: "Library Administrator",
+      email: "librarian@library.com",
+      role: "LIBRARIAN",
+      password: hashedPassword,
+    },
+  });
+
   await prisma.genre.createMany({
     data: genres,
     skipDuplicates: true,
@@ -140,10 +163,30 @@ const booksToCreate = books.map(({ genre, ...book }) => {
   };
 });
 
-await prisma.book.createMany({
-  data: booksToCreate,
+const existingBooks = await prisma.book.findMany({
+  select: {
+    title: true,
+    author: true,
+  },
 });
-  console.log('Successfully seeded 4 genres and 16 books!');
+
+const newBooks = booksToCreate.filter(
+  (book) =>
+    !existingBooks.some(
+      (existing) =>
+        existing.title === book.title &&
+        existing.author === book.author,
+    ),
+);
+
+if (newBooks.length > 0) {
+  await prisma.book.createMany({
+    data: newBooks,
+  });
+}
+  console.log('Librarian account and book records processed successfully!');
+}
+
 main()
   .catch((error) => {
     console.error('Seeding failed:', error);
